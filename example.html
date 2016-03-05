@@ -1,0 +1,78 @@
+<html>
+  <head>
+    <title>Barista Example</title>
+    <script src="jquery.min.js" type="text/javascript"></script>
+    <script src="barista.js" type="text/javascript"></script>
+    <script type="text/javascript">
+      //Initialize Models and Views
+			Barista.model('todoListModel',[														//Initialize todoListModel to [...] object
+				{id:1,description:'item 1'},
+			   	{id:2,description:'item 2'}
+			]);
+			Barista.view('todoListView',{														//Initialize todoListView
+				render 		: function(models,$container) {										//At render time, models is a map built with identified models (i.e. todoListModel above) and/or anonymous model bound to the view (see further below)
+					var title = models[''].title;												//Only one anonymous model is expected. If more than 1 is bound to the view, only the latest anonymous model will be considered.
+					return 	'<section style="padding:10px;border:1px solid black;display:inline-block">'+
+								'<h3>'+title+'</h3>'+
+								'<ul></ul>'+
+								'<button>+</button>'+
+							'</section>'; 
+				},
+				onrendered 	: function(models,$container,$this) { 								//bind events or include other views here. $this refers to top most jquery element rendered (in this example, <section/>)
+					var todoList = models['todoListModel'];
+					for (var i = 0; i < todoList.length; i++) {
+						var item = todoList[i];
+						if (!item.deleted)
+						Barista.view('todoListItemView').model(item).container($this.find('ul')).append().render();
+					}
+					$this.find('button').click(function(){
+						todoList.push({id:todoList.length+1,description:'item '+(todoList.length+1)});
+						Barista.publish('todoListModel');										//Publishing a model this way also notifies all bound views to re-render
+					});
+				}
+			});
+			Barista.view('todoListItemView',{													//Initialize todoListItemView
+				render 		: function(models,$container) { 									
+				    var item = models[''];														
+					return '<li>'+																//build and return html or jQuery using models
+								'<input type="checkbox"'+(item.checked?' checked="checked"':'')+'/> '+
+								(item.editable ? '<input type="text" value="'+item.description+'"/>' : ('<span>'+item.description+'</span>')) +
+								' <a href="#">X</a>'+
+						   '</li>'; 
+				},
+				onrendered 	: function(models,$container,$this) {
+					var item = models[''];
+					$this.find('input[type=checkbox]').click(function(){
+						if (item.checked) { delete item.checked; } else { item.checked = true; }
+						setTimeout(function(){
+							Barista.publish('todoListView');									//Publishing a view notifies said view to re-render
+						},100);
+					});
+					$this.find('span').click(function(){
+						item.editable = true;
+						setTimeout(function(){Barista.publish('todoListView');},100);
+					});
+					$this.find('a').click(function(){
+						item.deleted = true;
+						setTimeout(function(){Barista.publish('todoListView');},100);
+						return false;
+					});
+					$this.find('input[type=text]').blur(function(){
+						item.description = $(this).val();
+						delete item.editable;
+						setTimeout(function(){Barista.publish('todoListView');},100);
+					}).focus();
+				}
+			});
+			
+			//Configure Models and Views and render
+			Barista.view('todoListView').model('todoListModel').model({title:'Todo List'});		//Subscribe view to models including anonymous model
+			Barista.view('todoListView').container('body').render();							//Render view inside 'selector' container
+			//Can be chained together
+			//	  Barista.view('todoListView').model('todoListModel').model({title:'Todo List'}).container('body').render();
+			//aka Barista.coffee('todoListView').bean('todoListModel').bean({title:'Todo List'}).cup('body').brew();
+			//    view=coffee, model=bean, container=cup, render=brew, onrendered=serve
+    </script>
+  </head>
+  <body></body>
+</html>
