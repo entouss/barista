@@ -4,7 +4,8 @@
     <script src="jquery.min.js" type="text/javascript"></script>
     <script src="barista.js" type="text/javascript"></script>
     <script type="text/javascript">
-      //Initialize Models and Views
+      		$(function(){
+      			//Initialize Models and Views
 			Barista.model('todoListModel',[														//Initialize todoListModel to [...] object
 				{id:1,description:'item 1'},
 			   	{id:2,description:'item 2'}
@@ -72,6 +73,7 @@
 			//	  Barista.view('todoListView').model('todoListModel').model({title:'Todo List'}).container('body').render();
 			//aka Barista.coffee('todoListView').bean('todoListModel').bean({title:'Todo List'}).cup('body').brew();
 			//    view=coffee, model=bean, container=cup, render=brew, onrendered=serve
+      		});
     </script>
   </head>
   <body></body>
