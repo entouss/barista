@@ -1,14 +1,3 @@
-barista.js
-Details
-Activity
-TODAY
-E
-Erik Toussaint uploaded an item
-9:24 AM
-Javascript
-barista.js
-No recorded activity before September 25, 2016
-
 /*!
  * Barista.js
  * 
