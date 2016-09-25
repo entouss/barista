@@ -1,3 +1,14 @@
+barista.js
+Details
+Activity
+TODAY
+E
+Erik Toussaint uploaded an item
+9:24 AM
+Javascript
+barista.js
+No recorded activity before September 25, 2016
+
 /*!
  * Barista.js
  * 
@@ -10,13 +21,28 @@
 /*
 	Barista is a relatively simple Model/View/PubSub framework to generate "Views" using "Models", inside "Containers".
 	Multiple "Views" can be subscribed to one "Model" and will re-render when the "Model" is explicitly published.
-	"Views" can also be explicitly published by other "Views" to be re-rendered.
 	
-	see Barista.example() for more detail below
+	Once JQuery and Barista are imported, call $(Barista.helloworld); or $(Barista.example); and inspect the code for more details.
 */
 (function( module, $, undefined ) {
 	//Module's public facing interface
 	$.extend(module,{
+		helloworld : function(){
+			Barista.model('labels',{hello:'Hello'});
+			Barista.model('who',{name:prompt('What is your name?','World')});
+			Barista.view('hello',{
+				render : function(models,$container) {
+					var labels = models['labels'];
+					var who = models['who'];
+					return '<h1>'+labels.hello+' '+who.name+'!</h1>';
+				}
+			});
+			Barista.view('hello').model('labels').model('who').container('body').render();
+			setTimeout(function(){
+				Barista.model('who',{name:'Universe'});
+				Barista.publish('who');
+			},5000);
+		},
 		example : function() {
 			//Initialize Models and Views
 			Barista.model('todoListModel',[														//Initialize todoListModel to [...] object
@@ -37,7 +63,7 @@
 					for (var i = 0; i < todoList.length; i++) {
 						var item = todoList[i];
 						if (!item.deleted)
-						Barista.view('todoListItemView').model(item).container($this.find('ul')).append().render();
+						Barista.view('todoListItemView').model(item).container($this.find('ul')).append().render(); //append() tells Barista not to clear previous render when re-rendering view
 					}
 					$this.find('button').click(function(){
 						todoList.push({id:todoList.length+1,description:'item '+(todoList.length+1)});
@@ -165,7 +191,7 @@
 						}
 					} else {
 						module.metadata[id] = {
-							registry : new Set(),
+							registry : {},
 							component : component
 						};
 					}
@@ -178,7 +204,7 @@
 			if (registryId != null && componentId != null) {
 				var metadata = module.metadata(registryId);
 				if (metadata) {
-					metadata.registry.add(componentId);
+					metadata.registry[componentId] = componentId;
 				}
 			}
 		},
@@ -193,7 +219,9 @@
 				console.error('Barista: No module "'+id+'" found');
 			}
 			if (metadata != null && metadata.registry != null) {
-				metadata.registry.forEach(function(tid) {
+				
+				var tid;
+				for (tid in metadata.registry) {
 					var tcomponent = module.component(null,tid);
 					if (tcomponent != null) {
 						if (tcomponent.render) {
@@ -202,7 +230,18 @@
 							module.publish(tid);
 						}
 					}
-				});
+				}
+				
+				/*metadata.registry.forEach(function(tid) {
+					var tcomponent = module.component(null,tid);
+					if (tcomponent != null) {
+						if (tcomponent.render) {
+							tcomponent.render();
+						} else {
+							module.publish(tid);
+						}
+					}	
+				});*/
 			}
 		}
 	});
@@ -241,39 +280,48 @@
 				}
 			}
 			var html = null;
-			var $html = null;
-			if (this.renderString) {
-				html = this.renderString(model, container);
-				$html = $(html);
-			}
-			if (container) {
-				if ($html != null) {
-					$html.addClass('barista');
+			var that = this;
+			container.each(function(){
+				var $container = $(this);
+				if (that.renderString) {
+					html = that.renderString(model, $container);
+				}
+				if (html != null) {
+					$html = $(html);
+					$html.addClass('barista').addClass(that.id);//viewId
 					if (append) {
-						container.append($html);
+						$container.append($html);
 					} else {
-						container.html($html);
+						$container.html($html);
 					}
 				}
-			}
-			if (this.onrendered) {
-				this.onrendered(model, container, $html);
-			}
-			if (this.serve) {
-				this.serve(model, container, $html);
-			}
+			
+				if (that.onrendered) {
+					that.onrendered(model, $container, $html);
+				}
+				if (that.serve) {
+					that.serve(model, $container, $html);
+				}
+			});
 			return html;
 		},
 		models : function(ids) {
 			if (!ids && this._models) {
-				ids = Object.keys(this._models);
+				for (var key in this._models) {
+					  if (this._models.hasOwnProperty(key)) {
+						  ids = ids || [];
+						  ids.push(key);
+					  }
+				}
+				//ids = Object.keys(this._models);
 			}
 			var models = {};
 			var _this = this;
 			if (ids) {
-				ids.forEach(function(id) {
+				for (var i = 0; i < ids.length; i++) {
+					var id = ids[i];
 					models[id] = _this._model(id);
-				});
+				};
 			}
 			return models;
 		},
